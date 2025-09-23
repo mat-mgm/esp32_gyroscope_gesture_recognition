@@ -74,11 +74,35 @@ This project has been implemented and tested in the environment provided by Ardu
 ## 📂 Repository Structure
 
 ```
-├── data_collection/       # Arduino sketch for recording gesture data
-├── model_training/        # Python scripts for training & quantization
-├── inference/             # Arduino sketch for on-device classification
-├── models/                # Exported TFLite Micro models
-└── README.md              # Project documentation
+├── 1_record_gyro/              # Arduino sketches for recording raw gyro/IMU data
+│   ├── qmi8658_output_IMU.ino
+│   ├── qmi8658_output_IMU_csv.ino
+│   ├── qmi8658_output_IMU_json.ino
+│   └── record_gyro.ino
+│
+├── 2_capture_movement_data/    # Python script + CSV datasets for gesture capture
+│   ├── capture.py
+│   ├── down.csv
+│   ├── left.csv
+│   ├── right.csv
+│   └── up.csv
+│
+├── 3_model_training/           # Training, conversion, and evaluation of ML models
+│   ├── label_map.json
+│   ├── train_mlp.py
+│   ├── test.py
+│   ├── tflite_to_c.py
+│   ├── model.tflite
+│   ├── model_quant.tflite
+│   └── model.h
+│
+├── 4_inference_gyro_pc/        # Arduino sketch for running inference on PC/ESP32
+│   ├── inference_gyro_pc.ino
+│   └── model.h
+│
+├── ESP32 gryoscope gesture Edge AI.txt   # Project notes/documentation
+├── LICENSE
+└── README.md
 ```
 
 ---
