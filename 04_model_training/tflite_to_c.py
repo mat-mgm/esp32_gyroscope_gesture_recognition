@@ -1,6 +1,6 @@
 # tflite_to_c.py
 import sys
-fn = "./model/model_quant.tflite"
+fn = "./model/model.tflite"
 out = "../05_inference_gyro/model.h"
 data = open(fn,"rb").read()
 arr = ",".join(str(b) for b in data)

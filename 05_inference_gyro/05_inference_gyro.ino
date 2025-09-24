@@ -1,6 +1,6 @@
 /**
  * inference_gyro.ino
- * ESP32 TinyML inference with 6-channel IMU (gx,gy,gz,ax,ay,az)
+ * ESP32 TinyML inference
  */
 
 #include <Wire.h>
@@ -15,12 +15,12 @@
 
 // CONFIG
 #define IMU_ADDRESS 0x6B
-#define SAMPLE_HZ 100
+#define SAMPLE_HZ 50
 #define SAMPLE_MS (1000 / SAMPLE_HZ)
-#define TIMESTEPS 200
+#define TIMESTEPS 100
 #define CHANNELS 6
 #define N_INPUTS (TIMESTEPS * CHANNELS)
-#define N_OUTPUTS 6
+#define N_OUTPUTS 7
 #define ARENA_SIZE 20*1024
 #define TF_NUM_OPS 20
 
@@ -34,17 +34,32 @@ float buffer[N_INPUTS];
 
 // Class labels
 const char* gestureLabels[N_OUTPUTS] = {
-    "up",
     "down",
+    "front",
     "left",
     "right",
-    "front",
-    "still"
+    "still",
+    "undefined",
+    "up"
 };
 
 // Normalization values from training
-float mean[CHANNELS] = {-0.4765488803386688, 0.5123229026794434, -0.21973125636577606, -0.01396484486758709, 0.09708882868289948, -0.49677619338035583}; // actual from label_map.json
-float std_dev[CHANNELS]  = {16.046907424926758, 15.53460693359375, 16.19628143310547, 0.17297233641147614, 0.2079198658466339, 0.5193648338317871};   // actual
+float mean_vals[CHANNELS] = {
+    -0.9516523480415344,
+    1.0130267143249512,
+    -0.44401687383651733,
+    -0.027566734701395035,
+    0.19213300943374634,
+    -0.9869133830070496
+}; // actual from label_map.json
+float std_vals[CHANNELS]  = {
+    22.676923751831055,
+    21.948461532592773,
+    22.89988136291504,
+    0.24375328421592712,
+    0.26008835434913635,
+    0.22889447212219238
+};   // actual
 
 void setup() {
     Serial.begin(115200);
@@ -86,11 +101,10 @@ void loop() {
 
 void recordAndPredict() {
     Serial.println("Recording gesture...");
-    unsigned long start = millis();
     int idx = 0;
 
-    // Fill buffer with raw data
-    while (idx < N_INPUTS && (millis() - start) < TIMESTEPS * SAMPLE_MS) {
+    for (int i = 0; i < TIMESTEPS; ++i) {
+        unsigned long start = millis();
         IMU.update();
         GyroData g;
         AccelData a;
@@ -104,15 +118,28 @@ void recordAndPredict() {
         buffer[idx++] = a.accelY;
         buffer[idx++] = a.accelZ;
 
-        delay(SAMPLE_MS);
+        long wait = SAMPLE_MS - (long)(millis() - start);
+        if (wait > 0) delay(wait);
     }
 
-    // Normalize
+    // Normalize per-channel (same as training)
     for (int t = 0; t < TIMESTEPS; t++) {
         for (int c = 0; c < CHANNELS; c++) {
-            buffer[t * CHANNELS + c] = (buffer[t * CHANNELS + c] - mean[c]) / std_dev[c];
+            int pos = t * CHANNELS + c;
+            buffer[pos] = (buffer[pos] - mean_vals[c]) / std_vals[c];
         }
     }
+
+    // Optional: print buffer stats for debugging
+    float minv = buffer[0], maxv = buffer[0], sum = 0;
+    for (int i = 0; i < N_INPUTS; i++) {
+        if (buffer[i] < minv) minv = buffer[i];
+        if (buffer[i] > maxv) maxv = buffer[i];
+        sum += buffer[i];
+    }
+    Serial.print("buff_min: "); Serial.print(minv);
+    Serial.print(" max: "); Serial.print(maxv);
+    Serial.print(" mean: "); Serial.println(sum / N_INPUTS);
 
     // Predict
     if (!tf.predict(buffer).isOk()) {

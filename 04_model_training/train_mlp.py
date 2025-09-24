@@ -5,19 +5,29 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import json
+import random
 
 # ---------- CONFIG ----------
-CSV_GLOBS = ["../02_capture_data/data/up.csv", "../02_capture_data/data/down.csv", "../02_capture_data/data/left.csv", "../02_capture_data/data/right.csv", "../02_capture_data/data/front.csv", "../02_capture_data/data/still.csv"]
-TIMESTEPS = 200
+CSV_GLOBS = [
+    "../02_capture_data/data/down.csv", 
+    "../02_capture_data/data/front.csv",  
+    "../02_capture_data/data/left.csv", 
+    "../02_capture_data/data/right.csv", 
+    "../02_capture_data/data/still.csv",
+    "../02_capture_data/data/up.csv"
+]
+TIMESTEPS = 100
 CHANNELS = 6      # gx,gy,gz,ax,ay,az
 TEST_SIZE = 0.2
 RANDOM_STATE = 42
 BATCH_SIZE = 32
 EPOCHS = 50
-DENSE_UNITS = 128
+DENSE_UNITS = 64
 MODEL_DIR = "./model"
 MODEL_TFLITE = os.path.join(MODEL_DIR, "model.tflite")
 MODEL_TFLITE_QUANT = os.path.join(MODEL_DIR, "model_quant.tflite")
+UNDEFINED_SAMPLES_PER_CLASS = 50  # how many synthetic undefined windows to create
+
 # ----------------------------
 
 def load_all(csv_globs):
@@ -32,7 +42,7 @@ def load_all(csv_globs):
         # each gesture repetition becomes one sample
         for (gesture, rep), group in df.groupby(['gesture','rep']):
             group = group.sort_values('t_ms')
-            arr = group[['gx','gy','gz','ax','ay','az']].to_numpy()
+            arr = group[['gx','gy','gz','ax','ay','az']].to_numpy(dtype=np.float32)
             X.append(arr)
             y.append(gesture)
             if gesture not in classes:
@@ -54,6 +64,35 @@ def clean_array(arr):
     arr = np.clip(arr, -50, 50)  # clip extreme gyro/acc spikes
     return arr
 
+def synthesize_undefined(X_list, y_list, classes, n_samples=UNDEFINED_SAMPLES_PER_CLASS, target_len=TIMESTEPS):
+    """
+    Create synthetic 'undefined' windows by mixing random segments from different gestures,
+    and adding small random noise. This is *not perfect* but gives the model something to learn as 'any of the other 6 gestures'.
+    """
+    rnd = np.random.RandomState(RANDOM_STATE)
+    synth = []
+    for i in range(n_samples):
+        # pick 2-3 random arrays and splice random-length chunks
+        parts = []
+        n_parts = rnd.randint(2,4)
+        while len(np.vstack(parts)) < target_len if parts else True:
+            src = X_list[rnd.randint(0, len(X_list))]
+            # choose a random start
+            if src.shape[0] <= 10:
+                continue
+            start = rnd.randint(0, max(1, src.shape[0]-10))
+            length = rnd.randint(10, min(40, src.shape[0]-start))
+            parts.append(src[start:start+length])
+            if len(parts) >= n_parts:
+                break
+        if parts:
+            arr = np.vstack(parts)
+            arr = pad_or_trim(arr, target_len)
+            # add small gaussian jitter
+            arr += rnd.normal(scale=0.5, size=arr.shape).astype(arr.dtype)
+            synth.append(arr)
+    return synth
+
 def build_dataset(X_list, y_list, classes, target_len):
     classes = sorted(classes)
     cls_to_idx = {c:i for i,c in enumerate(classes)}
@@ -66,15 +105,10 @@ def build_dataset(X_list, y_list, classes, target_len):
         Y[i] = cls_to_idx[y_list[i]]
     return X, Y, classes
 
-""" def normalize_train(X_train, X_val):
-    mean = X_train.mean(axis=(0,1), keepdims=True)
-    std = X_train.std(axis=(0,1), keepdims=True) + 1e-8
-    return (X_train - mean)/std, (X_val - mean)/std, mean, std """
-
 def normalize_train(X_train, X_val):
     mean = np.nanmean(X_train, axis=(0,1), keepdims=True)
     std = np.nanstd(X_train, axis=(0,1), keepdims=True)
-    std[std < 1e-6] = 1.0   # avoid division by zero
+    std[std < 1e-6] = 1.0
     return (X_train - mean)/std, (X_val - mean)/std, mean, std
 
 def make_model(input_shape, num_classes):
@@ -116,7 +150,16 @@ def main():
     X_list, y_list, classes = load_all(CSV_GLOBS)
     if len(X_list) == 0:
         print("No data found. Aborting.")
-        return
+        return    
+
+    # Add synthetic undefined class
+    synth = synthesize_undefined(X_list, y_list, classes, n_samples=UNDEFINED_SAMPLES_PER_CLASS, target_len=TIMESTEPS)
+    synth_labels = ["undefined"] * len(synth)
+    X_list_ext = X_list + synth
+    y_list_ext = y_list + synth_labels
+    if "undefined" not in classes:
+        classes.append("undefined")
+
     X, Y, classes = build_dataset(X_list, y_list, classes, TIMESTEPS)
     
     # Debug check
@@ -144,8 +187,8 @@ def main():
     convert_to_tflite(model, X_train_n)
     
     # save label mapping
-    mapping = {"classes": classes, "mean": mean.tolist(), "std": std.tolist(), "timesteps": TIMESTEPS}
-    open(os.path.join(MODEL_DIR, "label_map.json"), "w").write(json.dumps(mapping))
+    mapping = {"classes": classes, "mean": mean.squeeze().tolist(), "std": std.squeeze().tolist(), "timesteps": TIMESTEPS}
+    open(os.path.join(MODEL_DIR, "label_map.json"), "w").write(json.dumps(mapping, indent=2))
     print("Saved label_map.json")
     
 if __name__ == "__main__":
