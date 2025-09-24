@@ -32,3 +32,11 @@ print(df.describe())     # check min/max/mean/std
 
 # Check for infinite values
 print(np.isinf(df[['gx','gy','gz','ax','ay','az']].to_numpy()).sum())
+
+df = pd.read_csv("../02_capture_data/data/front.csv")
+print("FRONT")
+print(df.isna().sum())   # count NaNs per column
+print(df.describe())     # check min/max/mean/std
+
+# Check for infinite values
+print(np.isinf(df[['gx','gy','gz','ax','ay','az']].to_numpy()).sum())
