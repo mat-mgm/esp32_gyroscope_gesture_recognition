@@ -1,4 +1,4 @@
-// record_gyro.ino  -- sends CSV to Serial after receiving "REC\n"
+// record_gyro.ino -- sends CSV to Serial after receiving "REC\n"
 #include <Wire.h>
 #include "FastIMU.h"
 
@@ -7,7 +7,7 @@
 QMI8658 IMU;
 calData calib = {0}; 
 
-const int SAMPLE_HZ = 100;
+const int SAMPLE_HZ = 50;
 const int SAMPLE_MS = 1000 / SAMPLE_HZ;
 
 void setup() {
@@ -26,14 +26,12 @@ void setup() {
 }
 
 void loop() {
-  // wait for command from PC
   if (Serial.available()) {
     String cmd = Serial.readStringUntil('\n');
     cmd.trim();
     if (cmd == "REC") {
-      recordWindow(2000); // default 1 second; change if you need 2s
+      recordWindow(2000); // 2 seconds
     } else if (cmd.startsWith("REC,")) {
-      // allow "REC,2000" to set milliseconds
       int dur = cmd.substring(4).toInt();
       if (dur > 0) recordWindow(dur);
     }
@@ -45,19 +43,29 @@ void recordWindow(int duration_ms) {
   unsigned long start = millis();
   unsigned long nextSample = start;
   while (millis() - start < (unsigned long)duration_ms) {
-    // ask sensor to update
     IMU.update();
+
     GyroData g;
-    IMU.getGyro(&g); // gyroX, gyroY, gyroZ in degrees/sec (API)
+    AccelData a;
+    IMU.getGyro(&g);
+    IMU.getAccel(&a);
+
     unsigned long t = millis() - start;
-    // print sample: t_ms,gx,gy,gz
+
     Serial.print(t);
     Serial.print(',');
     Serial.print(g.gyroX, 3);
     Serial.print(',');
     Serial.print(g.gyroY, 3);
     Serial.print(',');
-    Serial.println(g.gyroZ, 3);
+    Serial.print(g.gyroZ, 3);
+    Serial.print(',');
+    Serial.print(a.accelX, 3);
+    Serial.print(',');
+    Serial.print(a.accelY, 3);
+    Serial.print(',');
+    Serial.println(a.accelZ, 3);
+
     nextSample += SAMPLE_MS;
     long wait = (long)nextSample - (long)millis();
     if (wait > 0) delay(wait);

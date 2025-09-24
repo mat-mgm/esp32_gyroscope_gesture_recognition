@@ -1,12 +1,12 @@
 # capture.py
-import serial, time, sys, os
+import serial, time, os, sys
 
-PORT = "COM3"            # change to your port (e.g. /dev/ttyUSB0)
+PORT = "COM3"  # adjust to your port
 BAUD = 115200
-DUR = 2000               # ms; length of each recording
+DUR = 2000     # ms; length of each recording
+DATA_DIR = "./data"
 
-def capture_one(ser, duration_ms=1000):
-    """Capture one repetition from Arduino and return list of CSV lines (no header)."""
+def capture_one(ser, duration_ms=DUR):
     ser.reset_input_buffer()
     ser.write(f"REC,{duration_ms}\n".encode())
     started = False
@@ -28,13 +28,12 @@ def capture_one(ser, duration_ms=1000):
     return lines
 
 def get_last_rep(filename):
-    """Return last repetition index in existing CSV, or 0 if new file."""
     if not os.path.exists(filename):
         return 0
     last_rep = 0
     with open(filename, "r") as f:
         for line in f:
-            if line.startswith("gesture"):  # skip header
+            if line.startswith("gesture"):
                 continue
             parts = line.split(",")
             if len(parts) >= 3:
@@ -42,40 +41,37 @@ def get_last_rep(filename):
                     rep_idx = int(parts[1])
                     if rep_idx > last_rep:
                         last_rep = rep_idx
-                except ValueError:
+                except:
                     pass
     return last_rep
 
-def batch_capture(label, reps, duration_ms=1000):
+def batch_capture(label, reps, duration_ms=DUR):
     ser = serial.Serial(PORT, BAUD, timeout=1)
-    time.sleep(1)
-
-    filename = f"{label}.csv"
+    time.sleep(2)
+    os.makedirs(DATA_DIR, exist_ok=True)
+    filename = os.path.join(DATA_DIR, f"{label}.csv")
     file_exists = os.path.exists(filename)
-
     start_rep = get_last_rep(filename)
 
     with open(filename, "a") as f:
         if not file_exists:
-            f.write("gesture,rep,t_ms,gx,gy,gz\n")
-
+            f.write("gesture,rep,t_ms,gx,gy,gz,ax,ay,az\n")
         for r in range(1, reps + 1):
             rep_idx = start_rep + r
-            input(f"\nPress ENTER when ready for repetition {rep_idx}... ")
+            input(f"\nPress ENTER for repetition {rep_idx} of '{label}'...")
             print("Recording...")
-
             lines = capture_one(ser, duration_ms)
             for line in lines:
                 f.write(f"{label},{rep_idx},{line}\n")
-
-            print(f"Saved repetition {rep_idx} with {len(lines)} samples")
+            print(f"Saved repetition {rep_idx} ({len(lines)} samples)")
 
     ser.close()
-    print(f"\nAll {reps} new repetitions appended to {filename}")
+    print(f"\nAll {reps} repetitions saved to {filename}")
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("usage: python capture.py <label> <reps> [port]")
+        print("Usage: python capture.py <label> <reps> [port]")
     else:
-        if len(sys.argv) >= 4: PORT = sys.argv[3]
+        if len(sys.argv) >= 4:
+            PORT = sys.argv[3]
         batch_capture(sys.argv[1], int(sys.argv[2]))
