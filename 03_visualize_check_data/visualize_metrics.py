@@ -40,12 +40,12 @@ def plot_signal(ax, signal, reps_to_plot=[1, 2, 3]):
     ax.set_ylabel(signal)
 
 def main():
-    fig, axes = plt.subplots(len(SENSOR_COLUMNS), 1,
-                             figsize=(10, 2 * len(SENSOR_COLUMNS)),
-                             sharex=False)
+    fig, axes = plt.subplots(2, 3, figsize=(15, 8), sharex=False)
 
     fig.suptitle("Overlay of all gestures per signal (same color per gesture)", fontsize=16)
 
+    axes = axes.flatten()
+    
     for i, signal in enumerate(SENSOR_COLUMNS):
         plot_signal(axes[i], signal)
 
