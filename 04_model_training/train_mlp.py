@@ -7,7 +7,7 @@ import tensorflow as tf
 import json
 
 # ---------- CONFIG ----------
-CSV_GLOBS = ["data/up.csv", "data/down.csv", "data/left.csv", "data/right.csv"]
+CSV_GLOBS = ["../02_capture_data/data/up.csv", "../02_capture_data/data/down.csv", "../02_capture_data/data/left.csv", "../02_capture_data/data/right.csv", "../02_capture_data/data/front.csv", "../02_capture_data/data/still.csv"]
 TIMESTEPS = 200
 CHANNELS = 6      # gx,gy,gz,ax,ay,az
 TEST_SIZE = 0.2

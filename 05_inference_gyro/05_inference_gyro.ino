@@ -1,5 +1,5 @@
 /**
- * inference_gyro_pc.ino
+ * inference_gyro.ino
  * ESP32 TinyML inference with 6-channel IMU (gx,gy,gz,ax,ay,az)
  */
 
@@ -20,7 +20,7 @@
 #define TIMESTEPS 200
 #define CHANNELS 6
 #define N_INPUTS (TIMESTEPS * CHANNELS)
-#define N_OUTPUTS 4
+#define N_OUTPUTS 6
 #define ARENA_SIZE 20*1024
 #define TF_NUM_OPS 20
 
@@ -37,17 +37,19 @@ const char* gestureLabels[N_OUTPUTS] = {
     "up",
     "down",
     "left",
-    "right"
+    "right",
+    "front",
+    "still"
 };
 
 // Normalization values from training
-float mean[CHANNELS] = {-2.1658389568328857, 0.7307839393615723, 0.07644910365343094, -0.024928510189056396, 0.21519939601421356, -0.9713585376739502}; // actual from label_map.json
-float std_dev[CHANNELS]  = {25.900360107421875, 24.879959106445312, 27.77985382080078, 0.2450098842382431, 0.32145294547080994, 0.2965543270111084};   // actual
+float mean[CHANNELS] = {-0.4765488803386688, 0.5123229026794434, -0.21973125636577606, -0.01396484486758709, 0.09708882868289948, -0.49677619338035583}; // actual from label_map.json
+float std_dev[CHANNELS]  = {16.046907424926758, 15.53460693359375, 16.19628143310547, 0.17297233641147614, 0.2079198658466339, 0.5193648338317871};   // actual
 
 void setup() {
     Serial.begin(115200);
     delay(2000);
-    Serial.println("ESP32 TinyML 6-channel inference demo");
+    Serial.println("ESP32 TinyML inference demo");
 
     // Init IMU
     Wire.begin(48, 47);
