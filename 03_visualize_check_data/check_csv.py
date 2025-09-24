@@ -1,42 +1,37 @@
 import pandas as pd
 import numpy as np
+import os
 
-df = pd.read_csv("../02_capture_data/data/up.csv")
-print("UP")
-print(df.isna().sum())   # count NaNs per column
-print(df.describe())     # check min/max/mean/std
+DATA_DIR = "../02_capture_data/data"
 
-# Check for infinite values
-print(np.isinf(df[['gx','gy','gz','ax','ay','az']].to_numpy()).sum())
+def analyze_movement(label, filename):
+    """Load CSV, print NaN counts, summary stats, and infinite values."""
+    path = os.path.join(DATA_DIR, filename)
+    df = pd.read_csv(path)
 
-df = pd.read_csv("../02_capture_data/data/down.csv")
-print("DOWN")
-print(df.isna().sum())   # count NaNs per column
-print(df.describe())     # check min/max/mean/std
+    print(f"\n=== {label.upper()} ===")
+    print("NaN counts per column:")
+    print(df.isna().sum())
+    print("\nSummary statistics:")
+    print(df.describe())
 
-# Check for infinite values
-print(np.isinf(df[['gx','gy','gz','ax','ay','az']].to_numpy()).sum())
+    # Check for infinite values in sensor columns
+    inf_count = np.isinf(df[['gx','gy','gz','ax','ay','az']].to_numpy()).sum()
+    print(f"\nInfinite values in sensor columns: {inf_count}")
 
-df = pd.read_csv("../02_capture_data/data/right.csv")
-print("RIGHT")
-print(df.isna().sum())   # count NaNs per column
-print(df.describe())     # check min/max/mean/std
+    return df
 
-# Check for infinite values
-print(np.isinf(df[['gx','gy','gz','ax','ay','az']].to_numpy()).sum())
+# Movements to analyze
+movements = {
+    "UP": "up.csv",
+    "DOWN": "down.csv",
+    "RIGHT": "right.csv",
+    "LEFT": "left.csv",
+    "FRONT": "front.csv",
+    "STILL": "still.csv"   # new movement
+}
 
-df = pd.read_csv("../02_capture_data/data/left.csv")
-print("LEFT")
-print(df.isna().sum())   # count NaNs per column
-print(df.describe())     # check min/max/mean/std
+# Run analysis for each movement
+for label, filename in movements.items():
+    analyze_movement(label, filename)
 
-# Check for infinite values
-print(np.isinf(df[['gx','gy','gz','ax','ay','az']].to_numpy()).sum())
-
-df = pd.read_csv("../02_capture_data/data/front.csv")
-print("FRONT")
-print(df.isna().sum())   # count NaNs per column
-print(df.describe())     # check min/max/mean/std
-
-# Check for infinite values
-print(np.isinf(df[['gx','gy','gz','ax','ay','az']].to_numpy()).sum())
