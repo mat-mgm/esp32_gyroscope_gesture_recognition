@@ -146,6 +146,34 @@ def convert_to_tflite(model, X_train):
     open(MODEL_TFLITE_QUANT, "wb").write(tflite_quant)
     print(f"Saved INT8 quantized TFLite to {MODEL_TFLITE_QUANT}")
 
+def export_model_params():
+    # after you save label_map.json
+    with open(os.path.join(MODEL_DIR, "label_map.json")) as f:
+        mapping = json.load(f)
+
+    out_h = os.path.join("../05_inference_gyro", "model_params.h")
+    with open(out_h, "w") as f:
+        f.write("// Auto-generated from training script\n\n")
+
+        # classes
+        f.write(f"#define N_OUTPUTS {len(mapping['classes'])}\n")
+        f.write("const char* gestureLabels[N_OUTPUTS] = {\n")
+        for cls in mapping["classes"]:
+            f.write(f'    "{cls}",\n')
+        f.write("};\n\n")
+
+        # mean
+        f.write(f"#define N_FEATURES {len(mapping['mean'])}\n")
+        f.write("const float mean_vals[N_FEATURES] = {\n")
+        f.write("    " + ", ".join(f"{m:.6f}" for m in mapping["mean"]) + "\n};\n\n")
+
+        # std
+        f.write("const float std_vals[N_FEATURES] = {\n")
+        f.write("    " + ", ".join(f"{s:.6f}" for s in mapping["std"]) + "\n};\n\n")
+
+        # timesteps
+        f.write(f"#define TIMESTEPS {mapping['timesteps']}\n")
+
 def main():
     X_list, y_list, classes = load_all(CSV_GLOBS)
     if len(X_list) == 0:
@@ -190,6 +218,10 @@ def main():
     mapping = {"classes": classes, "mean": mean.squeeze().tolist(), "std": std.squeeze().tolist(), "timesteps": TIMESTEPS}
     open(os.path.join(MODEL_DIR, "label_map.json"), "w").write(json.dumps(mapping, indent=2))
     print("Saved label_map.json")
+
+    export_model_params()
+
+
     
 if __name__ == "__main__":
     main()

@@ -8,6 +8,7 @@
 
 // Your converted model
 #include "model.h"
+#include "model_params.h"
 
 // Runtime for ESP32 + EloquentTinyML wrapper
 #include <tflm_esp32.h>
@@ -17,10 +18,8 @@
 #define IMU_ADDRESS 0x6B
 #define SAMPLE_HZ 50
 #define SAMPLE_MS (1000 / SAMPLE_HZ)
-#define TIMESTEPS 100
-#define CHANNELS 6
-#define N_INPUTS (TIMESTEPS * CHANNELS)
-#define N_OUTPUTS 7
+#define N_FEATURES 6
+#define N_INPUTS (TIMESTEPS * N_FEATURES)
 #define ARENA_SIZE 20*1024
 #define TF_NUM_OPS 20
 
@@ -31,35 +30,6 @@ Eloquent::TF::Sequential<TF_NUM_OPS, ARENA_SIZE> tf;
 QMI8658 IMU;
 calData calib = {0};
 float buffer[N_INPUTS];
-
-// Class labels
-const char* gestureLabels[N_OUTPUTS] = {
-    "down",
-    "front",
-    "left",
-    "right",
-    "still",
-    "undefined",
-    "up"
-};
-
-// Normalization values from training
-float mean_vals[CHANNELS] = {
-    -0.9516523480415344,
-    1.0130267143249512,
-    -0.44401687383651733,
-    -0.027566734701395035,
-    0.19213300943374634,
-    -0.9869133830070496
-}; // actual from label_map.json
-float std_vals[CHANNELS]  = {
-    22.676923751831055,
-    21.948461532592773,
-    22.89988136291504,
-    0.24375328421592712,
-    0.26008835434913635,
-    0.22889447212219238
-};   // actual
 
 void setup() {
     Serial.begin(115200);
@@ -124,8 +94,8 @@ void recordAndPredict() {
 
     // Normalize per-channel (same as training)
     for (int t = 0; t < TIMESTEPS; t++) {
-        for (int c = 0; c < CHANNELS; c++) {
-            int pos = t * CHANNELS + c;
+        for (int c = 0; c < N_FEATURES; c++) {
+            int pos = t * N_FEATURES + c;
             buffer[pos] = (buffer[pos] - mean_vals[c]) / std_vals[c];
         }
     }
