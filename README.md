@@ -74,35 +74,43 @@ This project has been implemented and tested in the environment provided by Ardu
 ## 📂 Repository Structure
 
 ```
-├── 1_record_gyro/              # Arduino sketches for recording raw gyro/IMU data
-│   ├── qmi8658_output_IMU.ino
-│   ├── qmi8658_output_IMU_csv.ino
-│   ├── qmi8658_output_IMU_json.ino
-│   └── record_gyro.ino
-│
-├── 2_capture_movement_data/    # Python script + CSV datasets for gesture capture
+.
+├── 01_record_gyro  # Arduino sketches for recording raw gyro/IMU data
+│   └── 01_record_gyro.ino
+├── 02_capture_data  # Python script + CSV datasets for gesture capture
 │   ├── capture.py
-│   ├── down.csv
-│   ├── left.csv
-│   ├── right.csv
-│   └── up.csv
-│
-├── 3_model_training/           # Training, conversion, and evaluation of ML models
-│   ├── label_map.json
-│   ├── train_mlp.py
-│   ├── test.py
+│   └── data
+│       ├── down.csv
+│       ├── front.csv
+│       ├── left.csv
+│       ├── right.csv
+│       ├── still.csv
+│       └── up.csv
+├── 03_visualize_check_data  # Check and visualize collected data
+│   ├── check_csv.py
+│   ├── visualize_gestures_metrics.py
+│   └── visualize_metrics.py
+├── 04_model_training  # Training, conversion, and evaluation of ML models
+│   ├── model
+│   │   ├── label_map.json
+│   │   ├── model.tflite
+│   │   └── model_quant.tflite
 │   ├── tflite_to_c.py
-│   ├── model.tflite
-│   ├── model_quant.tflite
-│   └── model.h
-│
-├── 4_inference_gyro_pc/        # Arduino sketch for running inference on PC/ESP32
-│   ├── inference_gyro_pc.ino
-│   └── model.h
-│
-├── ESP32 gryoscope gesture Edge AI.txt   # Project notes/documentation
+│   └── train_mlp.py
+├── 05_inference_gyro    # Arduino sketch for running inference on PC/ESP32
+│   ├── 05_inference_gyro.ino
+│   ├── model.h
+│   └── model_params.h
+├── 06_inference_gyro_game
+│   ├── 06_inference_gyro_game.ino
+│   ├── model.h
+│   └── model_params.h
+├── ESP32 gryoscope gesture Edge AI.txt
 ├── LICENSE
-└── README.md
+├── README.md
+└── demo
+    ├── esp32_gesture_recognition.pdf
+    └── esp32_gesture_recognition.pptx
 ```
 
 ---
