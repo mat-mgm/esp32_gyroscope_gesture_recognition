@@ -1,7 +1,16 @@
 # capture.py
 import serial, time, os, sys
+import platform
 
-PORT = "COM3"  # adjust to your port
+if platform.system() == "Windows":
+    PORT = "COM3"  # default for Windows
+elif platform.system() == "Linux":
+    PORT = "/dev/ttyACM0"  # default for Linux
+else:
+    PORT = None
+    print("Unsupported OS. Please set PORT manually.")
+    sys.exit(1)
+
 BAUD = 115200
 DUR = 2000     # ms; length of each recording
 DATA_DIR = "./data"
