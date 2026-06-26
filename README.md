@@ -105,12 +105,10 @@ This project has been implemented and tested in the environment provided by Ardu
 │   ├── 06_inference_gyro_game.ino
 │   ├── model.h
 │   └── model_params.h
-├── ESP32 gryoscope gesture Edge AI.txt
 ├── LICENSE
 ├── README.md
 └── demo
-    ├── esp32_gesture_recognition.pdf
-    └── esp32_gesture_recognition.pptx
+    └── esp32_gesture_recognition.pdf
 ```
 
 ---
@@ -119,7 +117,7 @@ This project has been implemented and tested in the environment provided by Ardu
 
 1. **Clone this repo**  
    ```bash
-   git clone https://github.com/yourusername/esp32_gyroscope_gesture_recognition.git
+   git clone https://github.com/mat-mgm/esp32_gyroscope_gesture_recognition.git
    ```
 2. **Follow the Software Setup** steps above.
 3. **Run `data_collection` sketch** to gather your dataset.

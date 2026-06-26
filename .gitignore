@@ -1,0 +1,8 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Trained Keras/TF models (TFLite kept intentionally for deployment)
+*.h5
+*.keras
